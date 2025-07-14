@@ -15,8 +15,8 @@ function startGame(mode) {
 let ball = {
     x: 400,
     y: 250,
-    vx: 2,
-    vy: 1.5,
+    vx: 0,
+    vy: 0,
     radius: 8
 };
 
@@ -28,7 +28,10 @@ let players = [
 ];
 
 function resetPositions(){
-    ball.x=400; ball.y=250; ball.vx=2; ball.vy=1.5;
+    ball.x=400; ball.y=250;
+    let angle = Math.random() * Math.PI * 2;
+    ball.vx = Math.cos(angle) * 3;
+    ball.vy = Math.sin(angle) * 3;
     players[0].x=100; players[0].y=250;
     players[1].x=200; players[1].y=250;
     players[2].x=700; players[2].y=250;
@@ -40,6 +43,19 @@ function update(dt){
     players.forEach(p => {
         let targetX = ball.x;
         let targetY = ball.y;
+
+        // Obrońcy reagują mocniej, jeśli piłka leci w ich stronę
+        if (p.role === 1) {
+            if (p.team === 0 && ball.vx < 0) {
+                targetX = ball.x;
+                targetY = ball.y;
+            }
+            if (p.team === 1 && ball.vx > 0) {
+                targetX = ball.x;
+                targetY = ball.y;
+            }
+        }
+
         let dx = targetX - p.x;
         let dy = targetY - p.y;
         let dist = Math.hypot(dx, dy);
@@ -87,9 +103,9 @@ function update(dt){
     if(ball.y < ball.radius || ball.y > canvas.height - ball.radius) ball.vy *= -1;
     if(ball.x < ball.radius || ball.x > canvas.width - ball.radius) ball.vx *= -1;
 
-    // Tarcze by piłka nie zwalniała w nieskończoność
-    ball.vx *= 1.0;
-    ball.vy *= 1.0;
+    // Opór powietrza (mocniejsze hamowanie)
+    ball.vx *= 0.96;
+    ball.vy *= 0.96;
 
     // Kolizja piłki z graczami
     players.forEach(p=>{
@@ -122,7 +138,6 @@ function update(dt){
         timeLeft -= dt;
         if(timeLeft<=0){
             timeLeft=0;
-            // stop
             ball.vx=0; ball.vy=0;
         }
     }
@@ -136,24 +151,20 @@ function draw(){
     ctx.lineWidth=2;
     ctx.strokeRect(0,0,canvas.width,canvas.height);
 
-    // Linie bramek
     ctx.strokeRect(0,200,10,100);
     ctx.strokeRect(790,200,10,100);
 
-    // Linie stref
     ctx.strokeStyle="red";
     ctx.beginPath();
     ctx.moveTo(200,0); ctx.lineTo(200,500);
     ctx.moveTo(600,0); ctx.lineTo(600,500);
     ctx.stroke();
 
-    // Piłka
     ctx.beginPath();
     ctx.fillStyle="black";
     ctx.arc(ball.x,ball.y,ball.radius,0,Math.PI*2);
     ctx.fill();
 
-    // Gracze
     players.forEach((p,i)=>{
         ctx.beginPath();
         ctx.fillStyle=p.color;
@@ -166,7 +177,6 @@ function draw(){
         ctx.fillText(p.role+1,p.x,p.y);
     });
 
-    // Wynik
     ctx.fillStyle="black";
     ctx.font="20px sans-serif";
     ctx.textAlign="center";
